@@ -25,6 +25,7 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 FLAGS := -I$(ROOT_DIR) \
 	 -Wall -Werror -Wimplicit-fallthrough \
 	 -Wno-address-of-packed-member -Wno-compare-distinct-pointer-types -Wno-unknown-warning-option \
+	 -Wno-default-const-init-var-unsafe \
 	 -O2
 
 DEBUG ?= 0

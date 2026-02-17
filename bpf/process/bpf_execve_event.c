@@ -107,6 +107,11 @@ read_args(void *ctx, struct msg_execve_event *event)
 		if (args_size)
 			args_size -= 1;
 		size = args_size & 0x3ff /* BUFFER - 1 */;
+		/* Force the verifier to recognize the bounds by using asm volatile.
+		 * The compiler may optimize away regular C masking operations.
+		 */
+		asm volatile("%[size] &= 0x3ff;\n"
+			     : [size] "+r"(size));
 		err = with_errmetrics(probe_read, args, size, (char *)start_stack);
 		if (err < 0) {
 			p->flags |= EVENT_ERROR_ARGS;
@@ -156,7 +161,7 @@ FUNC_INLINE __u32 read_envs(void *ctx, struct msg_execve_event *event)
 	with_errmetrics(probe_read, &env_start, sizeof(env_start), _(&mm->env_start));
 	with_errmetrics(probe_read, &env_end, sizeof(env_end), _(&mm->env_end));
 
-	if (!env_start || !env_end)
+	if (!env_start || !env_end || env_end <= env_start)
 		return 0;
 
 	free_size = (char *)&event->process + BUFFER - envs;
@@ -165,7 +170,10 @@ FUNC_INLINE __u32 read_envs(void *ctx, struct msg_execve_event *event)
 	if (envs_size < BUFFER && envs_size < free_size) {
 		if (envs_size)
 			envs_size -= 1;
-		size = envs_size & 0x3ff; /* BUFFER - 1 */
+		size = envs_size;
+		/* Keep explicit masking so the verifier tracks bounded size. */
+		asm volatile("%[size] &= 0x3ff;\n"
+			     : [size] "+r"(size));
 
 		err = probe_read(envs, size, (char *)env_start);
 		if (err < 0) {

@@ -24,3 +24,7 @@ import "C"
 func UprobeTestFunc() {
 	C.uprobe_test_func()
 }
+
+func hasUprobeTestFunc() bool {
+	return true
+}

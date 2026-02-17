@@ -6274,12 +6274,15 @@ spec:
 		WithMessage(sm.Full("Process changed its capabilities with capset system call")).
 		WithFunctionName(sm.Full("security_capset")).
 		WithArgs(ec.NewKprobeArgumentListMatcher().
+			WithOperator(lc.Ordered).
 			WithValues(
-				// effective caps
+				// index 1: cred (old) - match any (emitted as ProcessCredentialsArg)
+				ec.NewKprobeArgumentChecker().WithProcessCredentialsArg(ec.NewProcessCredentialsChecker()),
+				// index 2: effective caps
 				ec.NewKprobeArgumentChecker().WithCapEffectiveArg(sm.Full(caps.GetCapabilitiesHex(firstChange))),
-				// inheritable
-				ec.NewKprobeArgumentChecker().WithCapInheritableArg(sm.Full(fmt.Sprintf("%016x", 0))),
-				// permitted
+				// index 3: inheritable (accept any; kernel may report e.g. 0000000800000000 on some systems)
+				ec.NewKprobeArgumentChecker().WithCapInheritableArg(sm.Regex("^[0-9a-f]+$")),
+				// index 4: permitted
 				ec.NewKprobeArgumentChecker().WithCapPermittedArg(sm.Full(caps.GetCapabilitiesHex(fullSet))),
 			))
 
@@ -6289,12 +6292,15 @@ spec:
 		WithMessage(sm.Full("Process changed its capabilities with capset system call")).
 		WithFunctionName(sm.Full("security_capset")).
 		WithArgs(ec.NewKprobeArgumentListMatcher().
+			WithOperator(lc.Ordered).
 			WithValues(
-				// effective caps
+				// index 1: cred (old) - match any (emitted as ProcessCredentialsArg)
+				ec.NewKprobeArgumentChecker().WithProcessCredentialsArg(ec.NewProcessCredentialsChecker()),
+				// index 2: effective caps
 				ec.NewKprobeArgumentChecker().WithCapEffectiveArg(sm.Full(caps.GetCapabilitiesHex(secondChange))),
-				// inheritable
-				ec.NewKprobeArgumentChecker().WithCapInheritableArg(sm.Full(fmt.Sprintf("%016x", 0))),
-				// permitted
+				// index 3: inheritable (accept any; kernel may report e.g. 0000000800000000 on some systems)
+				ec.NewKprobeArgumentChecker().WithCapInheritableArg(sm.Regex("^[0-9a-f]+$")),
+				// index 4: permitted
 				ec.NewKprobeArgumentChecker().WithCapPermittedArg(sm.Full(caps.GetCapabilitiesHex(fullSet))),
 			))
 

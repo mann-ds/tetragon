@@ -31,6 +31,18 @@ func LinkPin(lnk link.Link, bpfDir string, load *Program, extra ...string) error
 
 	pinPath := linkPinPath(bpfDir, load, extra...)
 
+	// Program pins are already repinned if stale entries are present.
+	// Apply the same behavior to links so interrupted test runs or stale bpffs
+	// pins don't cause subsequent loads to fail with EEXIST.
+	if _, err := os.Stat(pinPath); err == nil {
+		logger.GetLogger().Debug(fmt.Sprintf("Link pin file '%s' already exists, repinning", pinPath))
+		if err := os.Remove(pinPath); err != nil {
+			return fmt.Errorf("removing existing link pin '%s' failed: %w", pinPath, err)
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("checking link pin '%s' failed: %w", pinPath, err)
+	}
+
 	err := lnk.Pin(pinPath)
 	if err != nil {
 		return fmt.Errorf("pinning link '%s' failed: %w", pinPath, err)

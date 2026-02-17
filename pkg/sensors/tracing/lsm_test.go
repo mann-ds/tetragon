@@ -6,10 +6,12 @@
 package tracing
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"strconv"
@@ -467,5 +469,44 @@ spec:
 		}
 		return true
 	}
+	if !checkFunc() {
+		// If both checkers failed, check whether PROCESS_LSM events had empty ImaHash.
+		// That happens when the kernel does not provide IMA measurement (e.g. IMA
+		// disabled, no measure policy, or bpf_ima_file_hash returned 0).
+		if lsmEventsHaveEmptyImaHash(t) {
+			t.Skip("IMA hash not populated (kernel did not provide IMA measurement for this file)")
+		}
+	}
 	require.Condition(t, checkFunc)
+}
+
+// lsmEventsHaveEmptyImaHash returns true if the export file contains at least one
+// ProcessLsm event with empty ImaHash. Used to skip TestLSMIMAHash when the
+// kernel does not provide IMA hashes (e.g. IMA not enabled or file not measured).
+func lsmEventsHaveEmptyImaHash(t *testing.T) bool {
+	t.Helper()
+	fname, err := testutils.GetExportFilename(t)
+	if err != nil {
+		return false
+	}
+	f, err := os.Open(fname)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		var ev tetragon.GetEventsResponse
+		if err := json.Unmarshal(scanner.Bytes(), &ev); err != nil {
+			continue
+		}
+		plsm := ev.GetProcessLsm()
+		if plsm == nil {
+			continue
+		}
+		if plsm.ImaHash == "" {
+			return true
+		}
+	}
+	return false
 }

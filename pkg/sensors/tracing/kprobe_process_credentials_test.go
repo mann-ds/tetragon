@@ -102,7 +102,8 @@ spec:
 		)
 
 	currentECaps := &tetragon.Capabilities{
-		Permitted: currentCaps.Permitted,
+		Permitted:   currentCaps.Permitted,
+		Inheritable: currentCaps.Inheritable,
 	}
 	myECaps := ec.NewCapabilitiesChecker().FromCapabilities(currentECaps)
 	myCredEUid := ec.NewProcessCredentialsChecker().
@@ -256,7 +257,8 @@ spec:
 		)
 
 	currentECaps := &tetragon.Capabilities{
-		Permitted: currentCaps.Permitted,
+		Permitted:   currentCaps.Permitted,
+		Inheritable: currentCaps.Inheritable,
 	}
 	myECaps := ec.NewCapabilitiesChecker().FromCapabilities(currentECaps)
 	myBits := ec.NewSecureBitsTypeListMatcher().WithOperator(lc.Ordered).

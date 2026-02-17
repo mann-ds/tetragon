@@ -324,6 +324,10 @@ spec:
 }
 
 func uprobePidMatch(t *testing.T, pid uint32) error {
+	if !hasUprobeTestFunc() {
+		t.Skip("test requires cgo-enabled build for uprobe_test_func symbol")
+	}
+
 	path, err := os.Executable()
 	require.NoError(t, err)
 
